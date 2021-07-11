@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'"
+    />
+    <!-- <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *"
+    /> -->
+    <title>Hello World!</title>
+    <style>
+      body {
+        background: black;
+      }
+       #canvas {
+        background: black;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Hello World!</h1>
+    We are using Node.js <span id="node-version"></span>, Chromium
+    <span id="chrome-version"></span>, and Electron
+    <span id="electron-version"></span>.
+
+    <!-- You can also require other files to run in this process -->
+    <video playsinline autoplay muted style="display: none;"></video>
+    <canvas id="canvas"></canvas>
+    <button>Take snapshot</button>
+
+    <script src="./renderer.js"></script>
+
+    <script src="./canvas.js"></script>
+
+    <script>
+      const mediaStream = new MediaStream();
+      const video = document.querySelector("video");
+
+      const canvas = (window.canvas = document.querySelector("canvas"));
+      canvas.width = 480;
+      canvas.height = 360;
+
+      const canvasCap = canvas.captureStream(60);
+      canvasCap.getTracks().forEach((item) => {
+        console.log({ item });
+        // mediaStream.addTrack.bind(mediaStream)
+        mediaStream.addTrack(item);
+      });
+
+      const mediaRecorder = new MediaRecorder(mediaStream, {
+        mimeType: "video/webm;codecs=h264",
+        audioBitsPerSecond: 44100, // 44.1kHz
+        videoBitsPerSecond: 3 * 1024 * 1024, // 3000k 画质
+      });
+
+      function handleSuccess(stream) {
+        stream.getTracks().forEach((item) => {
+          // console.log(item);
+          if (item.kind == "audio") {
+            mediaStream.addTrack(item);
+          }
+        });
+        // window.stream = stream; // make stream available to browser console
+        video.srcObject = stream;
+      }
+
+      function handleError(error) {
+        console.log(
+          "navigator.MediaDevices.getUserMedia error: ",
+          error.message,
+          error.name
+        );
+      }
+      navigator.mediaDevices
+        .getUserMedia({
+          audio: true,
+          video: true,
+        })
+        .then(handleSuccess)
+        .catch(handleError);
+    </script>
+  </body>
+</html>
